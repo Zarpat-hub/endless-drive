@@ -1,0 +1,337 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>KoksDriver</title>
+	<style>
+	html, body {
+	  height: 100%;
+	  width: 100%;
+	  margin: 0;
+	  color: white;
+	  font-family: monospace;
+	}
+		
+	</style>
+	<script type="module">
+	//Web Server for Chrome
+
+	import * as THREE from './../three.js-master/build/three.module.js';
+    import {FBXLoader} from './../three.js-master/examples/jsm/loaders/FBXLoader.js';
+    import {OrbitControls} from './../three.js-master/examples/jsm/controls/OrbitControls.js';
+    import { EffectComposer } from './../three.js-master/examples/jsm/postprocessing/EffectComposer.js';
+
+
+    const canvas = document.querySelector('#canva');
+    const renderer = new THREE.WebGLRenderer({canvas});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+    const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 2000);
+
+    function main() {
+
+        const scene =  createScene();
+        const car = createCar(scene);
+        createGround(scene);
+        const objects = spawnObjects(scene,car);
+        moveCar(scene,car);
+        music();
+
+       /*const controls = new OrbitControls(camera, canvas);
+                controls.target.set(0, 0, 0);
+                controls.update();*/
+    }
+
+
+    function createScene(){
+            const scene = new THREE.Scene();
+
+            const color = 0xFFFFFF;
+            const intensity = 1;
+            const mainLight = new THREE.DirectionalLight(color, intensity);
+            scene.add(mainLight);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+
+            const light = new THREE.DirectionalLight(color, intensity);
+            light.position.set(1,10,4);
+            scene.add(light);
+    
+
+            const textLoader = new THREE.TextureLoader().load('/Projekt%20Driver/models/neon city.jpg');;
+            scene.background = textLoader;
+            
+            
+          
+
+            
+
+
+            function render() {
+            renderer.render(scene, camera)
+            
+            }
+
+            let animationLoopId = null
+
+            function animationLoop() {
+            animationLoopId = requestAnimationFrame(animationLoop)
+            render();
+            }
+
+            animationLoop();
+
+            return scene;
+    }
+
+    function createCar(scene){
+        
+       
+        const car = new THREE.Object3D();
+        const loader = new FBXLoader();
+        loader.load("/Projekt%20Driver/models/car.fbx",(obj)=>{
+        
+                car.add(obj);
+            })
+        
+        
+
+        car.rotateY(Math.PI);
+        car.scale.set(0.3,0.3,0.2);
+
+        car.position.z=15
+        car.position.x=0;
+        car.position.y=10;
+        
+        camera.position.z=105;
+        camera.position.y=50;
+        
+
+        scene.add(car);
+       
+        return car;
+    }
+   
+
+    function createGround(scene){
+        
+    const length = 100000;
+    const width = 210;
+
+    const texture = new THREE.TextureLoader();
+
+    const geo = new THREE.PlaneGeometry(width, length)
+    const mat = new THREE.MeshLambertMaterial({
+    color:0x080808,emissive:0x050505/*, map:texture.load("/Projekt%20Driver/models/metal_texture.jpg")*/
+    })
+    const mesh = new THREE.Mesh(geo, mat)
+    mesh.position.set(0, 0, 0)
+    mesh.rotation.set(Math.PI / -2, 0, 0)
+    scene.add(mesh)
+
+    const pavementGeo = new THREE.BoxGeometry(25,10,length);
+    const pavementMat = new THREE.MeshLambertMaterial({color: 0x080808, emissive:0x050505});
+    const leftPavementMesh = new THREE.Mesh(pavementGeo,pavementMat);
+    leftPavementMesh.position.set(-120,0,0);
+    scene.add(leftPavementMesh);
+
+    const rightPavementMesh = new THREE.Mesh(pavementGeo,pavementMat);
+    rightPavementMesh.position.set(120,0,0);
+    scene.add(rightPavementMesh);
+   
+    for(let i=35;i<140; i+=70){
+        const material = new THREE.LineBasicMaterial( { color: 0x0000ff} );
+        const points = [];
+        points.push( new THREE.Vector3( -i, 0, 100) );
+        points.push( new THREE.Vector3( -i, -0, -length ) );
+        
+
+        const geometry = new THREE.BufferGeometry().setFromPoints( points );
+        const line = new THREE.Line( geometry, material );
+        scene.add( line );
+    }
+
+    
+    for(let i=35;i<140; i+=70){
+        const material = new THREE.LineBasicMaterial( { color: 0x0000ff } );
+        const points = [];
+        points.push( new THREE.Vector3( i, 0, -length ) );
+        points.push( new THREE.Vector3( i, 0, 100) );
+
+        const geometry = new THREE.BufferGeometry().setFromPoints( points );
+        const line = new THREE.Line( geometry, material );
+        scene.add( line );
+    }
+
+   
+    
+    }
+
+    function spawnObjects(scene,car){
+ 
+            var objectsArray = [];
+
+            var xPositions = [-70,0,70];
+            var zOffset = [-500,-100,0,100,200,300,400,500,600,1000];
+
+            for(let i=0; i<15; i++){
+            const geometry = new THREE.BoxGeometry(50,70,10);
+            const material = new THREE.MeshPhongMaterial({color: 0x123451, emissive: 0x654321});
+            const mesh = new THREE.Mesh(geometry, material);
+
+            var randomX = xPositions[Math.floor(Math.random()*xPositions.length)];
+            mesh.position.set(randomX,0,-1000-(i*1000));
+            objectsArray.push(mesh);
+            scene.add(mesh);
+            }
+
+            var lampArray = [];
+
+            for(let i=0; i<2000; i+=200){
+
+                const lampObj = new THREE.Object3D();
+
+                const lampGeometry = new THREE.BoxGeometry(5,150,5);
+                const lampMaterial = new THREE.MeshLambertMaterial({color: 0x123456});
+                const lampMesh = new THREE.Mesh(lampGeometry,lampMaterial);
+                lampObj.position.set(-125,10,-i);
+                lampObj.add(lampMesh);
+                
+                const lampHeadStickGeometry = new THREE.BoxGeometry(5,30,5);
+                const lampHeadStickMesh = new THREE.Mesh(lampHeadStickGeometry,lampMaterial);
+                lampHeadStickMesh.position.y=83;
+                lampHeadStickMesh.position.x=10;
+                lampHeadStickMesh.rotateZ(-Math.PI/4);
+                lampObj.add(lampHeadStickMesh);
+
+
+                const lampObjRight = new THREE.Object3D();
+                const lampMeshRight = new THREE.Mesh(lampGeometry,lampMaterial);
+                lampObjRight.position.set(125,10,-i);
+                lampObjRight.add(lampMeshRight);
+                
+                const lampHeadStickMeshRight = new THREE.Mesh(lampHeadStickGeometry,lampMaterial);
+                lampHeadStickMeshRight.position.y=83;
+                lampHeadStickMeshRight.position.x=-10;
+                lampHeadStickMeshRight.rotateZ(Math.PI/4);
+                lampObjRight.add(lampHeadStickMeshRight);
+
+                const lampLight = new THREE.SpotLight( 0xfffff1,0.5 )
+                lampLight.position.set(-125,150,-5);
+                lampObj.add(lampLight);
+
+                const lampLightRight = new THREE.SpotLight( 0xfffff1,0.5 )
+                lampLightRight.position.set(125,500,-5);
+                lampObjRight.add(lampLightRight);
+
+                lampArray.push(lampObj);
+                lampArray.push(lampObjRight);
+                scene.add(lampObj);
+                scene.add(lampObjRight);
+
+            }
+
+            function animate(){
+                
+                requestAnimationFrame(animate);
+                
+                renderer.render(scene,camera);
+
+                var oneBox;
+                var carPos = new THREE.Vector3();
+
+                objectsArray.forEach(function(obj){
+                    obj.position.z+=7;
+
+                    carPos.setFromMatrixPosition( car.matrixWorld );
+                    if(carPos.distanceTo(obj.position)<=30){
+                        if(confirm('Game Over!')){
+                        window.location.reload();  
+                    }
+                    }
+
+                    if(obj.position.z>=50){
+                        var randomX = xPositions[Math.floor(Math.random()*xPositions.length)];
+                        var randomZ = zOffset[Math.floor(Math.random()*zOffset.length)];
+                        obj.position.z=-7000-randomZ;
+                        obj.position.x=randomX;
+                    }
+                    
+                });
+
+
+                lampArray.forEach(function(lamp){
+                    lamp.position.z+=7;
+
+                    if(lamp.position.z>50){
+                        lamp.position.z=-2000;
+                    }
+                })
+                
+            }
+
+        animate();
+    }
+
+
+    function moveCar(scene,car){
+
+        var dx = 0;
+
+        function render(){
+
+            document.addEventListener("keypress", function(event) {
+
+                if(event.keyCode == 97){ // A key turn left
+                   car.position.x=-70;
+                   console.log(car.position.x);
+                }
+                if(event.keyCode == 100){ // W key turn right
+                    car.position.x=70;
+                    console.log(car.position.x);
+                }
+
+                if(event.keyCode == 115){ // S key turn center
+                    car.position.x=0;
+                    console.log(car.position.x);
+                }
+            })
+
+            requestAnimationFrame(render);
+            renderer.render(scene,camera);
+
+        }
+        
+        render();
+    }
+
+
+    function music(){
+
+        const listener = new THREE.AudioListener();
+        camera.add( listener );
+
+        // create a global audio source
+        const sound = new THREE.Audio( listener );
+
+        // load a sound and set it as the Audio object's buffer
+        const audioLoader = new THREE.AudioLoader();
+        audioLoader.load( '/Projekt%20Driver/sound/driver_audio.ogg', function( buffer ) {
+            sound.setBuffer( buffer );
+            sound.setLoop( true );
+            sound.setVolume( 0.1 );
+            sound.play();
+        });
+
+    }
+
+
+
+    main();
+	</script>
+</head>
+<body>
+	<canvas id="canva"></canvas>
+</body>
+</html>
